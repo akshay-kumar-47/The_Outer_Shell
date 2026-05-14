@@ -1,6 +1,6 @@
 services:
   # PostgreSQL Database
-  - type: psql
+  - type: postgres
     name: clothing-store-db
     plan: free
 
