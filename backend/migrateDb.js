@@ -1,27 +1,24 @@
 const { Client } = require('pg');
 const bcrypt = require('bcrypt');
 
-const appDbConfig = {
-  user: 'postgres',
-  host: 'localhost',
-  database: 'clothing_store',
-  password: 'root',
-  port: 5432,
-};
+require('dotenv').config();
+const appDbConfig = process.env.DATABASE_URL
+  ? { connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } }
+  : {
+      user: 'postgres',
+      host: 'localhost',
+      database: 'clothing_store',
+      password: 'root',
+      port: 5432,
+    };
 
 async function migrateDb() {
   const client = new Client(appDbConfig);
   try {
     await client.connect();
-    console.log('Dropping existing order tables...');
-    await client.query('DROP TABLE IF EXISTS order_items CASCADE');
-    await client.query('DROP TABLE IF EXISTS orders CASCADE');
-    await client.query('DROP TABLE IF EXISTS cart_items CASCADE');
-    await client.query('DROP TABLE IF EXISTS users CASCADE');
-
     console.log('Creating users table...');
     await client.query(`
-      CREATE TABLE users (
+      CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         username VARCHAR(255) UNIQUE NOT NULL,
         password_hash VARCHAR(255) NOT NULL,
@@ -32,7 +29,7 @@ async function migrateDb() {
 
     console.log('Creating orders table...');
     await client.query(`
-      CREATE TABLE orders (
+      CREATE TABLE IF NOT EXISTS orders (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES users(id),
         customer_name VARCHAR(255) NOT NULL,
@@ -44,9 +41,21 @@ async function migrateDb() {
       )
     `);
 
+    console.log('Creating products table...');
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS products (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        price NUMERIC(10, 2) NOT NULL,
+        image_url VARCHAR(1024),
+        category VARCHAR(100)
+      )
+    `);
+
     console.log('Creating order_items table...');
     await client.query(`
-      CREATE TABLE order_items (
+      CREATE TABLE IF NOT EXISTS order_items (
         id SERIAL PRIMARY KEY,
         order_id INTEGER REFERENCES orders(id),
         product_id INTEGER REFERENCES products(id),
@@ -57,7 +66,7 @@ async function migrateDb() {
 
     console.log('Creating cart_items table...');
     await client.query(`
-      CREATE TABLE cart_items (
+      CREATE TABLE IF NOT EXISTS cart_items (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES users(id),
         product_id INTEGER REFERENCES products(id),
@@ -70,7 +79,7 @@ async function migrateDb() {
     const saltRounds = 10;
     const adminPasswordHash = await bcrypt.hash('admin@123', saltRounds);
     await client.query(
-      'INSERT INTO users (username, password_hash, role) VALUES ($1, $2, $3)',
+      'INSERT INTO users (username, password_hash, role) VALUES ($1, $2, $3) ON CONFLICT (username) DO NOTHING',
       ['admin', adminPasswordHash, 'admin']
     );
 

@@ -1,12 +1,15 @@
 const { Client } = require('pg');
 
-const appDbConfig = {
-  user: 'postgres',
-  host: 'localhost',
-  database: 'clothing_store',
-  password: 'root',
-  port: 5432,
-};
+require('dotenv').config();
+const appDbConfig = process.env.DATABASE_URL
+  ? { connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } }
+  : {
+      user: 'postgres',
+      host: 'localhost',
+      database: 'clothing_store',
+      password: 'root',
+      port: 5432,
+    };
 
 const jackets = [
   { name: 'Apex Waterproof Shell', desc: 'Lightweight waterproof shell for harsh conditions.', price: 3499, img: '/images/jacket1.png' },
@@ -24,11 +27,11 @@ async function reseedDb() {
   try {
     await client.connect();
 
-    console.log('Clearing old data...');
-    // Clear dependencies first due to foreign keys
-    await client.query('DELETE FROM cart_items');
-    await client.query('DELETE FROM order_items');
-    await client.query('DELETE FROM products');
+    const { rowCount } = await client.query('SELECT * FROM products');
+    if (rowCount > 0) {
+      console.log('Products already exist, skipping seed.');
+      return;
+    }
 
     console.log(`Inserting ${jackets.length} new jackets...`);
     
