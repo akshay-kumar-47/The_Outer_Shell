@@ -18,7 +18,7 @@ const UserDashboard = () => {
 
     const fetchOrders = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/orders/history', {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/history`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.ok) {
