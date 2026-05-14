@@ -54,7 +54,7 @@ app.post('/api/auth/signup', async (req, res) => {
     if (err.code === '23505') { // unique violation
       res.status(400).json({ error: 'Username already exists' });
     } else {
-      res.status(500).json({ error: 'Internal server error' });
+      res.status(500).json({ error: err.message || 'Internal server error' });
     }
   }
 });
@@ -74,7 +74,7 @@ app.post('/api/auth/login', async (req, res) => {
     const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
     res.json({ token, user: { id: user.id, username: user.username, role: user.role } });
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: err.message || 'Internal server error' });
   }
 });
 
@@ -84,7 +84,7 @@ app.get('/api/products', async (req, res) => {
     const { rows } = await db.query('SELECT * FROM products ORDER BY id ASC');
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: err.message || 'Internal server error' });
   }
 });
 
@@ -99,7 +99,7 @@ app.get('/api/cart', authenticateToken, async (req, res) => {
     `, [req.user.id]);
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: err.message || 'Internal server error' });
   }
 });
 
@@ -122,7 +122,7 @@ app.post('/api/cart/sync', authenticateToken, async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     await db.query('ROLLBACK');
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: err.message || 'Internal server error' });
   }
 });
 
@@ -182,7 +182,7 @@ app.get('/api/orders/history', authenticateToken, async (req, res) => {
     const { rows } = await db.query('SELECT * FROM orders WHERE user_id = $1 ORDER BY created_at DESC', [req.user.id]);
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: err.message || 'Internal server error' });
   }
 });
 
@@ -197,7 +197,7 @@ app.get('/api/orders/admin', authenticateToken, requireAdmin, async (req, res) =
     `);
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: err.message || 'Internal server error' });
   }
 });
 
@@ -209,7 +209,7 @@ app.put('/api/orders/:id/status', authenticateToken, requireAdmin, async (req, r
     await db.query('UPDATE orders SET status = $1 WHERE id = $2', [status, id]);
     res.json({ message: 'Order status updated successfully' });
   } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: err.message || 'Internal server error' });
   }
 });
 
