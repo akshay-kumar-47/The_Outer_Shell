@@ -213,6 +213,17 @@ app.put('/api/orders/:id/status', authenticateToken, requireAdmin, async (req, r
   }
 });
 
+const { execSync } = require('child_process');
+
+try {
+  console.log('Running automated database setup...');
+  execSync('node migrateDb.js', { stdio: 'inherit' });
+  execSync('node reseedDb.js', { stdio: 'inherit' });
+  console.log('Database setup complete.');
+} catch (err) {
+  console.error('Failed to run database setup:', err);
+}
+
 app.listen(PORT, () => {
   console.log(`Backend server is running on http://localhost:${PORT}`);
 });
